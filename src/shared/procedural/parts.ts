@@ -5,12 +5,15 @@ export function part(
 	cframe: CFrame,
 	color: Color3,
 	material: Enum.Material,
+	shape?: Enum.PartType,
 ): Part {
 	const p = new Instance("Part");
 	p.Name = name;
 	p.Anchored = true;
 	p.CanCollide = false;
 	p.Size = size;
+	if (shape !== undefined) p.Shape = shape;
+	// CFrame, never Position — Position depenetrates and refuses overlaps.
 	p.CFrame = cframe;
 	p.Color = color;
 	p.Material = material;
@@ -37,14 +40,13 @@ export function disk(
 	color: Color3,
 	material: Enum.Material,
 ): Part {
-	const p = part(
+	return part(
 		parent,
 		name,
 		new Vector3(diameter, thickness, diameter),
 		cframe.mul(CFrame.Angles(math.rad(90), 0, 0)),
 		color,
 		material,
+		Enum.PartType.Cylinder,
 	);
-	p.Shape = Enum.PartType.Cylinder;
-	return p;
 }
