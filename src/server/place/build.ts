@@ -3,7 +3,6 @@ import {
 	DOOR_HEIGHT,
 	DOOR_THICKNESS,
 	DOOR_WIDTH,
-	FRAME_THICKNESS,
 	PALETTE,
 	PLAYGROUND_PAIR,
 	PORTAL_PAIR_ATTRIBUTE,
@@ -11,6 +10,10 @@ import {
 	PORTALS_FOLDER_NAME,
 	WORLD_NAME,
 } from "shared/game";
+import {
+	DEFAULT_CLOSET_DOOR_ATTRIBUTES,
+	generateClosetDoor,
+} from "shared/procedural";
 
 function makePart(
 	name: string,
@@ -50,38 +53,6 @@ function box(
 	});
 }
 
-function doorFrame(parent: Instance, doorCFrame: CFrame, color: Color3): void {
-	const hw = DOOR_WIDTH / 2;
-	const hh = DOOR_HEIGHT / 2;
-	const t = FRAME_THICKNESS;
-	const depth = DOOR_THICKNESS + 0.6;
-
-	makePart(
-		"FrameLeft",
-		new Vector3(t, DOOR_HEIGHT + t, depth),
-		doorCFrame.mul(new CFrame(-hw - t / 2, 0, 0)),
-		color,
-		parent,
-		{ material: Enum.Material.Wood },
-	);
-	makePart(
-		"FrameRight",
-		new Vector3(t, DOOR_HEIGHT + t, depth),
-		doorCFrame.mul(new CFrame(hw + t / 2, 0, 0)),
-		color,
-		parent,
-		{ material: Enum.Material.Wood },
-	);
-	makePart(
-		"FrameTop",
-		new Vector3(DOOR_WIDTH + t * 2, t, depth),
-		doorCFrame.mul(new CFrame(0, hh + t / 2, 0)),
-		color,
-		parent,
-		{ material: Enum.Material.Wood },
-	);
-}
-
 function portalDoor(
 	parent: Instance,
 	name: string,
@@ -101,11 +72,26 @@ function portalDoor(
 	return door;
 }
 
-function standingDoor(world: Folder, name: string, cframe: CFrame): CFrame {
+function standingClosetDoor(
+	world: Folder,
+	name: string,
+	cframe: CFrame,
+	color: Color3,
+	doorNumber: number,
+): CFrame {
 	const model = new Instance("Model");
 	model.Name = name;
 	model.Parent = world;
-	doorFrame(model, cframe, PALETTE.doorFrame);
+	generateClosetDoor(model, {
+		size: new Vector3(DOOR_WIDTH, DOOR_HEIGHT, 0.7),
+		attributes: {
+			...DEFAULT_CLOSET_DOOR_ATTRIBUTES,
+			Color: color,
+			DoorNumber: doorNumber,
+			HangFromRail: true,
+		},
+	});
+	model.PivotTo(cframe);
 	return cframe;
 }
 
@@ -198,8 +184,8 @@ export function buildPlace(workspace: Workspace): Folder {
 		new Vector3(20, 1 + DOOR_HEIGHT / 2, 28),
 		new Vector3(20, 1 + DOOR_HEIGHT / 2, 0),
 	);
-	standingDoor(world, "DoorA", doorA);
-	standingDoor(world, "DoorB", doorB);
+	standingClosetDoor(world, "DoorA", doorA, Color3.fromRGB(214, 96, 112), 12);
+	standingClosetDoor(world, "DoorB", doorB, Color3.fromRGB(72, 148, 188), 7);
 	portalDoor(portals, "PortalA", PLAYGROUND_PAIR, doorA);
 	portalDoor(portals, "PortalB", PLAYGROUND_PAIR, doorB);
 
