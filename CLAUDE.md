@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Doorworks** — original night-shift door factory. Right now `PlaceService` builds a **systems playground** (open pad + two free-standing portal doors) so we can showcase `@rbxts/immersive-portals` without a fake interior. The scare floor is authored separately. Not Monsters, Inc.; no Disney/Pixar IP.
+**Doorworks** — original night-shift door factory. The playground and closet doors are **edit-time instances** in Studio (doors are `ProceduralModel`s you tweak in Properties). Runtime code should not spawn tangible world geometry. Scare floor is authored separately. Not Monsters, Inc.; no Disney/Pixar IP.
 
 Stack: **roblox-ts** + **Flamework** + **Charm** + **Lapis** + **Squash** + **immersive-portals**.
 
@@ -37,8 +37,7 @@ src/
 │   ├── ui/
 │   └── runtime.client.ts
 ├── server/
-│   ├── place/build.ts   # Playground geometry (runtime, rebuilt on server start)
-│   ├── services/        # PlaceService, data stack
+│   ├── services/        # Data + player lifecycle only — no world spawn
 │   └── runtime.server.ts
 └── shared/
     ├── game/place.ts    # Tags, pair ids, palette
@@ -48,7 +47,7 @@ src/
 
 ## Portals
 
-`PlaceService` builds `Workspace.World` (scenery) and `Workspace.Portals` (tagged door parts). `PortalController` waits for `World`, then:
+`PortalController` clones `Workspace.World` (edit-time scenery) into portal viewports. Closet doors are `ProceduralModel`s whose generator lives at `ReplicatedStorage.TS.procedural.ClosetDoorGenerator`. Change Size or attributes (Color, DoorNumber, PanelRows, …) in Properties — the engine regenerates. Portal planes are generated inside the door (tag `ImmersivePortal`). Then:
 
 ```ts
 group.enableAutoDiscovery(); // tag ImmersivePortal + matching PortalPair
@@ -59,7 +58,7 @@ group.bind();
 
 Authoring a new pair: two `BasePart`s in `Portals`, same `PortalPair`, Front facing the approach side, `CanCollide = false`. Put scenery in `World`. Do not put the portal parts in `World`. ViewportFrames cannot recurse — the partner door shows as bare geometry in the view.
 
-The playground is rebuilt on every server start. Play-mode instance edits do not persist.
+Do not create playground parts, doors, or lighting from a service `onStart`. Play-mode instance edits still do not persist — author in Edit.
 
 ### Flamework Pattern
 

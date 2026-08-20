@@ -1,3 +1,5 @@
+import { CollectionService } from "@rbxts/services";
+
 export interface ClosetDoorAttributes {
 	DoorNumber: number;
 	PanelRows: number;
@@ -7,6 +9,7 @@ export interface ClosetDoorAttributes {
 	HangFromRail: boolean;
 	KnobRight: boolean;
 	Color: Color3;
+	PortalPair: string;
 }
 
 export const DEFAULT_CLOSET_DOOR_ATTRIBUTES: ClosetDoorAttributes = {
@@ -18,6 +21,7 @@ export const DEFAULT_CLOSET_DOOR_ATTRIBUTES: ClosetDoorAttributes = {
 	HangFromRail: true,
 	KnobRight: true,
 	Color: Color3.fromRGB(214, 96, 112),
+	PortalPair: "playground",
 };
 
 export interface ClosetDoorParams {
@@ -74,6 +78,18 @@ export function generateClosetDoor(
 	const brass = Color3.fromRGB(196, 152, 72);
 	const railMetal = Color3.fromRGB(92, 96, 104);
 	const depth = math.max(size.Z, 0.5);
+	const portal = part(
+		target,
+		"PortalPlane",
+		new Vector3(size.X - 0.2, size.Y - 0.2, 0.35),
+		new CFrame(0, 0, 0.08),
+		Color3.fromRGB(18, 18, 24),
+		Enum.Material.Neon,
+	);
+	portal.CanCollide = false;
+	portal.SetAttribute("PortalPair", a.PortalPair);
+	CollectionService.AddTag(portal, "ImmersivePortal");
+
 	const stile = math.clamp(a.StileWidth, 0.4, size.X / 3);
 	const rail = math.clamp(a.RailHeight, 0.4, size.Y / 5);
 	const rows = math.clamp(math.floor(a.PanelRows), 1, 4);
