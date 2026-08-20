@@ -47,7 +47,14 @@ src/
 
 ## Portals
 
-`PortalController` clones `Workspace.World` (edit-time scenery) into portal viewports. Closet doors are `ProceduralModel`s whose generator lives at `ReplicatedStorage.TS.procedural.ClosetDoorGenerator`. Change Size or attributes (Color, DoorNumber, PanelRows, …) in Properties — the engine regenerates. Portal planes are generated inside the door (tag `ImmersivePortal`). Then:
+`PortalController` clones `Workspace.World` (edit-time scenery) into portal viewports.
+
+Door station is three ProceduralModels (build the slab first):
+- `ClosetDoorGenerator` — colonial 4-panel door
+- `DoorStationFrameGenerator` — metal frame + red beacon
+- `DoorHolderGenerator` — loader arms, scream canister, keypad
+
+Change Size or attributes in Properties — the engine regenerates. Portal planes are generated inside the door (tag `ImmersivePortal`). Then:
 
 ```ts
 group.enableAutoDiscovery(); // tag ImmersivePortal + matching PortalPair

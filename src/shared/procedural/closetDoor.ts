@@ -1,13 +1,10 @@
 import { CollectionService } from "@rbxts/services";
+import { disk, part, shade } from "./parts";
 
 export interface ClosetDoorAttributes {
 	DoorNumber: number;
-	PanelRows: number;
-	PanelCols: number;
 	StileWidth: number;
 	RailHeight: number;
-	HangFromRail: boolean;
-	Station: boolean;
 	KnobRight: boolean;
 	Color: Color3;
 	PortalPair: string;
@@ -15,12 +12,8 @@ export interface ClosetDoorAttributes {
 
 export const DEFAULT_CLOSET_DOOR_ATTRIBUTES: ClosetDoorAttributes = {
 	DoorNumber: 12,
-	PanelRows: 2,
-	PanelCols: 2,
 	StileWidth: 0.85,
 	RailHeight: 0.78,
-	HangFromRail: false,
-	Station: true,
 	KnobRight: true,
 	Color: Color3.fromRGB(232, 228, 218),
 	PortalPair: "playground",
@@ -29,57 +22,6 @@ export const DEFAULT_CLOSET_DOOR_ATTRIBUTES: ClosetDoorAttributes = {
 export interface ClosetDoorParams {
 	size: Vector3;
 	attributes: ClosetDoorAttributes;
-}
-
-function part(
-	parent: Instance,
-	name: string,
-	size: Vector3,
-	cframe: CFrame,
-	color: Color3,
-	material: Enum.Material,
-): Part {
-	const p = new Instance("Part");
-	p.Name = name;
-	p.Anchored = true;
-	p.CanCollide = false;
-	p.Size = size;
-	p.CFrame = cframe;
-	p.Color = color;
-	p.Material = material;
-	p.TopSurface = Enum.SurfaceType.Smooth;
-	p.BottomSurface = Enum.SurfaceType.Smooth;
-	p.Parent = parent;
-	return p;
-}
-
-function shade(color: Color3, mul: number): Color3 {
-	return new Color3(
-		math.clamp(color.R * mul, 0, 1),
-		math.clamp(color.G * mul, 0, 1),
-		math.clamp(color.B * mul, 0, 1),
-	);
-}
-
-function disk(
-	parent: Instance,
-	name: string,
-	diameter: number,
-	thickness: number,
-	cframe: CFrame,
-	color: Color3,
-	material: Enum.Material,
-): Part {
-	const p = part(
-		parent,
-		name,
-		new Vector3(diameter, thickness, diameter),
-		cframe.mul(CFrame.Angles(math.rad(90), 0, 0)),
-		color,
-		material,
-	);
-	p.Shape = Enum.PartType.Cylinder;
-	return p;
 }
 
 function rectangularMolding(
@@ -219,190 +161,9 @@ function colonialPanel(
 	);
 }
 
-function buildStation(
-	target: Instance,
-	size: Vector3,
-	depth: number,
-	doorNumber: number,
-): void {
-	const metal = Color3.fromRGB(148, 152, 158);
-	const metalDark = Color3.fromRGB(92, 96, 102);
-	const metalLight = Color3.fromRGB(176, 180, 186);
-	const hazard = Color3.fromRGB(214, 176, 48);
-	const extraX = 1.35;
-	const extraY = 1.7;
-	const backZ = depth / 2 + 0.55;
-
-	part(
-		target,
-		"StationBack",
-		new Vector3(size.X + extraX * 2, size.Y + extraY, 0.7),
-		new CFrame(0, extraY / 2 - 0.15, backZ),
-		metalDark,
-		Enum.Material.DiamondPlate,
-	);
-	part(
-		target,
-		"StationLeft",
-		new Vector3(0.7, size.Y + extraY, depth + 1.4),
-		new CFrame(-size.X / 2 - extraX + 0.15, extraY / 2 - 0.15, 0.15),
-		metal,
-		Enum.Material.Metal,
-	);
-	part(
-		target,
-		"StationRight",
-		new Vector3(0.7, size.Y + extraY, depth + 1.4),
-		new CFrame(size.X / 2 + extraX - 0.15, extraY / 2 - 0.15, 0.15),
-		metal,
-		Enum.Material.Metal,
-	);
-	part(
-		target,
-		"StationHeader",
-		new Vector3(size.X + extraX * 2, 1.1, depth + 1.2),
-		new CFrame(0, size.Y / 2 + extraY / 2 + 0.05, 0.1),
-		metal,
-		Enum.Material.Metal,
-	);
-
-	const beacon = part(
-		target,
-		"Beacon",
-		new Vector3(0.55, 0.55, 0.55),
-		new CFrame(0, size.Y / 2 + extraY / 2 + 0.55, -depth / 2 - 0.2),
-		Color3.fromRGB(196, 32, 36),
-		Enum.Material.Neon,
-	);
-	beacon.Shape = Enum.PartType.Ball;
-	const light = new Instance("PointLight");
-	light.Color = Color3.fromRGB(255, 64, 64);
-	light.Brightness = 1.2;
-	light.Range = 10;
-	light.Parent = beacon;
-
-	const rivet = (name: string, x: number, y: number, z: number) => {
-		const r = part(
-			target,
-			name,
-			new Vector3(0.18, 0.18, 0.12),
-			new CFrame(x, y, z),
-			metalLight,
-			Enum.Material.Metal,
-		);
-		r.Shape = Enum.PartType.Cylinder;
-		r.CFrame = new CFrame(x, y, z).mul(CFrame.Angles(math.rad(90), 0, 0));
-	};
-	const zRivet = -depth / 2 - 0.72;
-	rivet(
-		"RivetTL",
-		-size.X / 2 - extraX + 0.35,
-		size.Y / 2 + extraY / 2 - 0.35,
-		zRivet,
-	);
-	rivet(
-		"RivetTR",
-		size.X / 2 + extraX - 0.35,
-		size.Y / 2 + extraY / 2 - 0.35,
-		zRivet,
-	);
-	rivet("RivetBL", -size.X / 2 - extraX + 0.35, -size.Y / 2 + 0.45, zRivet);
-	rivet("RivetBR", size.X / 2 + extraX - 0.35, -size.Y / 2 + 0.45, zRivet);
-
-	part(
-		target,
-		"ArmLeft",
-		new Vector3(0.45, 4.2, 0.45),
-		new CFrame(-size.X / 2 - extraX - 0.7, 0.2, 0.4),
-		metalLight,
-		Enum.Material.Metal,
-	);
-	part(
-		target,
-		"PanelLeft",
-		new Vector3(1.6, 1.8, 0.25),
-		new CFrame(-size.X / 2 - extraX - 1.5, 1.4, -0.2),
-		metalDark,
-		Enum.Material.Metal,
-	);
-	part(
-		target,
-		"ArmRight",
-		new Vector3(0.55, 3.6, 0.55),
-		new CFrame(size.X / 2 + extraX + 0.85, 0.4, 0.5),
-		metalLight,
-		Enum.Material.Metal,
-	);
-	part(
-		target,
-		"ClampRight",
-		new Vector3(1.4, 0.7, 1.1),
-		new CFrame(size.X / 2 + extraX + 1.4, -0.6, -0.15),
-		metalDark,
-		Enum.Material.Metal,
-	);
-
-	part(
-		target,
-		"Threshold",
-		new Vector3(size.X + extraX * 2 + 2, 0.12, 3.2),
-		new CFrame(0, -size.Y / 2 - 0.06, -depth / 2 - 1.4),
-		Color3.fromRGB(48, 50, 54),
-		Enum.Material.DiamondPlate,
-	);
-	part(
-		target,
-		"HazardL",
-		new Vector3((size.X + extraX * 2 + 2) / 2, 0.14, 1.1),
-		new CFrame(
-			-(size.X + extraX * 2 + 2) / 4,
-			-size.Y / 2 - 0.05,
-			-depth / 2 - 2.6,
-		),
-		hazard,
-		Enum.Material.SmoothPlastic,
-	);
-	part(
-		target,
-		"HazardR",
-		new Vector3((size.X + extraX * 2 + 2) / 2, 0.14, 1.1),
-		new CFrame(
-			(size.X + extraX * 2 + 2) / 4,
-			-size.Y / 2 - 0.05,
-			-depth / 2 - 2.6,
-		),
-		hazard,
-		Enum.Material.SmoothPlastic,
-	);
-
-	const plate = part(
-		target,
-		"NumberPlate",
-		new Vector3(1.5, 0.55, 0.08),
-		new CFrame(0, size.Y / 2 + extraY / 2 + 0.05, -depth / 2 - 0.55),
-		Color3.fromRGB(196, 152, 72),
-		Enum.Material.Metal,
-	);
-	const gui = new Instance("SurfaceGui");
-	gui.Name = "NumberGui";
-	gui.Face = Enum.NormalId.Front;
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud;
-	gui.PixelsPerStud = 50;
-	gui.Parent = plate;
-	const label = new Instance("TextLabel");
-	label.BackgroundTransparency = 1;
-	label.Size = new UDim2(1, 0, 1, 0);
-	label.Text = tostring(doorNumber);
-	label.TextColor3 = Color3.fromRGB(40, 28, 16);
-	label.Font = Enum.Font.GothamBold;
-	label.TextScaled = true;
-	label.Parent = gui;
-}
-
 /**
- * Four-panel colonial closet door (arched uppers) in an industrial dock.
- * Portal plane sits behind the slab for walk-through. No character-specific
- * decals — paint via the Color attribute.
+ * Four-panel colonial closet door only. Station frame and holder are
+ * separate ProceduralModels.
  *
  * @see https://create.roblox.com/docs/parts/procedural-models
  */
@@ -566,18 +327,4 @@ export function generateClosetDoor(
 		brass,
 		Enum.Material.Metal,
 	);
-
-	if (a.Station) {
-		buildStation(target, size, depth, a.DoorNumber);
-	} else if (a.HangFromRail) {
-		const hangY = size.Y / 2 + 0.9;
-		part(
-			target,
-			"Rail",
-			new Vector3(size.X + 4, 0.18, 0.18),
-			new CFrame(0, hangY, 0),
-			Color3.fromRGB(92, 96, 104),
-			Enum.Material.Metal,
-		);
-	}
 }
