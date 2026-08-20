@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Doorworks** — original night-shift door factory. Closets are live portals via `@rbxts/immersive-portals`. Not Monsters, Inc.; no Disney/Pixar IP.
+**Doorworks** — original night-shift door factory. Right now `PlaceService` builds a **systems playground** (open pad + two free-standing portal doors) so we can showcase `@rbxts/immersive-portals` without a fake interior. The scare floor is authored separately. Not Monsters, Inc.; no Disney/Pixar IP.
 
 Stack: **roblox-ts** + **Flamework** + **Charm** + **Lapis** + **Squash** + **immersive-portals**.
 
@@ -37,7 +37,7 @@ src/
 │   ├── ui/
 │   └── runtime.client.ts
 ├── server/
-│   ├── place/build.ts   # Factory + closet geometry (runtime, not a Rojo map)
+│   ├── place/build.ts   # Playground geometry (runtime, rebuilt on server start)
 │   ├── services/        # PlaceService, data stack
 │   └── runtime.server.ts
 └── shared/
@@ -57,9 +57,9 @@ group.trackAllPlayers();
 group.bind();
 ```
 
-Authoring a new closet: add a matching pair of `BasePart`s in `Portals`, same `PortalPair` string, Front facing the approach side, `CanCollide = false`. Put the rooms in `World`. ViewportFrames cannot recurse — looking through a door you see the destination room, not another live portal.
+Authoring a new pair: two `BasePart`s in `Portals`, same `PortalPair`, Front facing the approach side, `CanCollide = false`. Put scenery in `World`. Do not put the portal parts in `World`. ViewportFrames cannot recurse — the partner door shows as bare geometry in the view.
 
-The map is rebuilt on every server start. Do not author the factory in Studio Play; edits there will not persist.
+The playground is rebuilt on every server start. Play-mode instance edits do not persist.
 
 ### Flamework Pattern
 

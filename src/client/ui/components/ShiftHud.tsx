@@ -6,7 +6,7 @@ export function ShiftHud() {
 		<frame
 			AnchorPoint={new Vector2(0, 0)}
 			Position={new UDim2(0, 20, 0, 20)}
-			Size={new UDim2(0, 360, 0, 72)}
+			Size={new UDim2(0, 420, 0, 72)}
 			BackgroundColor3={Color3.fromRGB(16, 18, 24)}
 			BackgroundTransparency={0.2}
 			BorderSizePixel={0}
@@ -21,7 +21,7 @@ export function ShiftHud() {
 			<textlabel
 				Size={new UDim2(1, 0, 0, 24)}
 				BackgroundTransparency={1}
-				Text="DOORWORKS  ·  NIGHT SHIFT"
+				Text="DOORWORKS  ·  PLAYGROUND"
 				TextColor3={Color3.fromRGB(232, 168, 84)}
 				TextSize={16}
 				Font={Enum.Font.GothamBold}
@@ -31,7 +31,7 @@ export function ShiftHud() {
 				Position={new UDim2(0, 0, 0, 28)}
 				Size={new UDim2(1, 0, 0, 24)}
 				BackgroundTransparency={1}
-				Text="Walk through the closet. The other side is a real room."
+				Text="Two free-standing doors. Walk around them, then through."
 				TextColor3={Color3.fromRGB(210, 214, 220)}
 				TextSize={14}
 				Font={Enum.Font.Gotham}
