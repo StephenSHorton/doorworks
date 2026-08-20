@@ -41,6 +41,29 @@ function makePart(
 	return p;
 }
 
+function hangLight(
+	parent: Instance,
+	name: string,
+	position: Vector3,
+	color: Color3,
+	range: number,
+): void {
+	const housing = box(
+		parent,
+		name,
+		new Vector3(2.4, 0.3, 2.4),
+		position,
+		Color3.fromRGB(220, 210, 180),
+		Enum.Material.Neon,
+	);
+	const light = new Instance("PointLight");
+	light.Brightness = 1.6;
+	light.Range = range;
+	light.Color = color;
+	light.Shadows = false;
+	light.Parent = housing;
+}
+
 function box(
 	parent: Instance,
 	name: string,
@@ -273,6 +296,11 @@ function buildFactory(world: Folder): CFrame {
 		PALETTE.factoryAccent,
 		Enum.Material.Metal,
 	);
+	const lampY = floorTop + WALL_HEIGHT - 1.2;
+	const lampColor = Color3.fromRGB(255, 214, 160);
+	hangLight(factory, "LampDoor", new Vector3(0, lampY, -FACTORY_SIZE.Z / 2 + 6), lampColor, 36);
+	hangLight(factory, "LampMid", new Vector3(0, lampY, 0), lampColor, 40);
+	hangLight(factory, "LampRear", new Vector3(0, lampY, 16), lampColor, 36);
 
 	const doorPos = new Vector3(
 		0,
@@ -330,6 +358,13 @@ function buildCloset(world: Folder): CFrame {
 		ROOM_OFFSET.add(new Vector3(6, 2, -8)),
 		PALETTE.doorFrame,
 		Enum.Material.Wood,
+	);
+	hangLight(
+		closet,
+		"LampCeiling",
+		new Vector3(ROOM_OFFSET.X, floorTop + WALL_HEIGHT - 1.2, ROOM_OFFSET.Z),
+		Color3.fromRGB(255, 230, 190),
+		28,
 	);
 
 	const doorCFrame = CFrame.lookAt(

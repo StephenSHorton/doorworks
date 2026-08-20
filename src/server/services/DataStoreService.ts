@@ -21,19 +21,24 @@ type Unsubscribe = () => void;
 
 @Service({})
 export class DataStoreService implements OnStart {
-	private readonly collection = createCollection(COLLECTION_NAME, {
-		defaultData: DEFAULT_DATA,
-		validate: IS_DATA,
-		// Append-only. Each entry upgrades one schema version. Add new entries
-		// here when the Data type changes — never edit existing ones. The last
-		// migration must return Data.
-		//
-		// normalizeData fills every field with its default when missing, so it
-		// works as a universal "added a new field" migration. To rename or
-		// transform existing values, add a separate Migration<unknown> entry
-		// before the normalize step.
-		migrations: [(data): Data => normalizeData(data as Partial<Data>)],
-	});
+	// Lapis createCollection talks to DataStoreService in the constructor.
+	// Unpublished Studio places throw, which aborts Flamework.ignite() and
+	// takes PlaceService down with it. Skip the collection entirely in mock.
+	private readonly collection = USE_MOCK_DATA
+		? undefined
+		: createCollection(COLLECTION_NAME, {
+				defaultData: DEFAULT_DATA,
+				validate: IS_DATA,
+				// Append-only. Each entry upgrades one schema version. Add new
+				// entries here when the Data type changes — never edit existing
+				// ones. The last migration must return Data.
+				//
+				// normalizeData fills every field with its default when missing,
+				// so it works as a universal "added a new field" migration. To
+				// rename or transform existing values, add a separate
+				// Migration<unknown> entry before the normalize step.
+				migrations: [(data): Data => normalizeData(data as Partial<Data>)],
+			});
 
 	private readonly docs = new Map<number, Document<Data>>();
 	private readonly subs = new Map<number, Unsubscribe>();
@@ -65,8 +70,15 @@ export class DataStoreService implements OnStart {
 
 		const key = `${DOCUMENT_PREFIX}${id}`;
 
+		const collection = this.collection;
+		if (!collection) {
+			DataManager.setData(id, DEFAULT_DATA);
+			this.playerStateService.markPlayerLoaded(player);
+			return;
+		}
+
 		try {
-			const doc = await this.collection.load(key, [id]);
+			const doc = await collection.load(key, [id]);
 
 			// Player may have left while we awaited — close the doc cleanly.
 			if (!this.playerStateService.getPlayerByUserId(id)) {

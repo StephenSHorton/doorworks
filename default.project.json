@@ -38,6 +38,7 @@
 		},
 		"Workspace": {
 			"$className": "Workspace",
+			"$ignoreUnknownInstances": true,
 			"$properties": {
 				"FilteringEnabled": true
 			}
