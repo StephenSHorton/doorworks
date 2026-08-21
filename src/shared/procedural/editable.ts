@@ -71,7 +71,7 @@ export function addTombstone(
 	mesh: EditableMesh,
 	center: Vector3,
 	size: Vector3,
-	archSegments = 8,
+	archSegments = 12,
 ): void {
 	const hx = size.X / 2;
 	const hy = size.Y / 2;
@@ -114,9 +114,11 @@ export function addTombstone(
 	}
 
 	const n = ring.size();
+	// Side walls: pass verts so clockwise-from-outside addQuad faces outward.
+	// (front[i] → front[j] along a CCW ring would make addQuad point inward.)
 	for (let i = 0; i < n; i++) {
 		const j = (i + 1) % n;
-		addQuad(mesh, frontIds[i], frontIds[j], backIds[j], backIds[i]);
+		addQuad(mesh, frontIds[i], backIds[i], backIds[j], frontIds[j]);
 	}
 	for (let i = 1; i < n - 1; i++) {
 		addTri(mesh, frontIds[0], frontIds[i + 1], frontIds[i]);
