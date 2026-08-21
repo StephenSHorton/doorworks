@@ -9,25 +9,36 @@ export function createMesh(): EditableMesh {
 	return AssetService.CreateEditableMesh();
 }
 
+/** Winding so (b-a)×(c-a) points away from `origin` (out of the solid). */
 function addTri(
 	mesh: EditableMesh,
 	a: number,
 	b: number,
 	c: number,
+	origin: Vector3,
 ): void {
-	mesh.AddTriangle(a, b, c);
+	const pa = mesh.GetPosition(a);
+	const pb = mesh.GetPosition(b);
+	const pc = mesh.GetPosition(c);
+	const normal = pb.sub(pa).Cross(pc.sub(pa));
+	const centroid = pa.add(pb).add(pc).mul(1 / 3);
+	if (normal.Dot(centroid.sub(origin)) < 0) {
+		mesh.AddTriangle(a, c, b);
+	} else {
+		mesh.AddTriangle(a, b, c);
+	}
 }
 
-/** Quad. Winding is clockwise from the outside so Roblox front-faces point out. */
 export function addQuad(
 	mesh: EditableMesh,
 	a: number,
 	b: number,
 	c: number,
 	d: number,
+	origin: Vector3,
 ): void {
-	addTri(mesh, a, d, c);
-	addTri(mesh, a, c, b);
+	addTri(mesh, a, b, c, origin);
+	addTri(mesh, a, c, d, origin);
 }
 
 export function addBox(
@@ -54,13 +65,13 @@ export function addBox(
 	const n111 = v(cx + hx, cy + hy, cz + hz);
 	const n011 = v(cx - hx, cy + hy, cz + hz);
 
-	// Front (-Z), back (+Z), right (+X), left (-X), top (+Y), bottom (-Y)
-	addQuad(mesh, n000, n100, n110, n010);
-	addQuad(mesh, n101, n001, n011, n111);
-	addQuad(mesh, n100, n101, n111, n110);
-	addQuad(mesh, n001, n000, n010, n011);
-	addQuad(mesh, n010, n110, n111, n011);
-	addQuad(mesh, n001, n101, n100, n000);
+	const origin = center;
+	addQuad(mesh, n000, n100, n110, n010, origin);
+	addQuad(mesh, n101, n001, n011, n111, origin);
+	addQuad(mesh, n100, n101, n111, n110, origin);
+	addQuad(mesh, n001, n000, n010, n011, origin);
+	addQuad(mesh, n010, n110, n111, n011, origin);
+	addQuad(mesh, n001, n101, n100, n000, origin);
 }
 
 const ARCH_SEGMENTS = 24;
@@ -101,7 +112,6 @@ function pushArc(
 	}
 }
 
-/** Extrude a CCW XY ring into a prism. Side winding matches clockwise-from-outside addQuad. */
 function addPrism(
 	mesh: EditableMesh,
 	ring: Vector3[],
@@ -109,6 +119,17 @@ function addPrism(
 	zBack: number,
 ): void {
 	if (ring.size() < 3) return;
+	let sx = 0;
+	let sy = 0;
+	for (const p of ring) {
+		sx += p.X;
+		sy += p.Y;
+	}
+	const origin = new Vector3(
+		sx / ring.size(),
+		sy / ring.size(),
+		(zFront + zBack) / 2,
+	);
 	const frontIds: number[] = [];
 	const backIds: number[] = [];
 	for (const p of ring) {
@@ -118,11 +139,11 @@ function addPrism(
 	const n = ring.size();
 	for (let i = 0; i < n; i++) {
 		const j = (i + 1) % n;
-		addQuad(mesh, frontIds[i], backIds[i], backIds[j], frontIds[j]);
+		addQuad(mesh, frontIds[i], backIds[i], backIds[j], frontIds[j], origin);
 	}
 	for (let i = 1; i < n - 1; i++) {
-		addTri(mesh, frontIds[0], frontIds[i + 1], frontIds[i]);
-		addTri(mesh, backIds[0], backIds[i], backIds[i + 1]);
+		addTri(mesh, frontIds[0], frontIds[i], frontIds[i + 1], origin);
+		addTri(mesh, backIds[0], backIds[i], backIds[i + 1], origin);
 	}
 }
 
