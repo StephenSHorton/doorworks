@@ -149,14 +149,18 @@ function parseGrain(value: string): WoodGrain {
 	return "plank";
 }
 
+const materialCache: Record<string, DoorMaterials> = {};
+
 export function createDoorMaterials(
 	pause: () => void,
 	woodGrain = "plank",
 ): DoorMaterials {
+	const grain = parseGrain(woodGrain);
+	const cached = materialCache[grain];
+	if (cached) return cached;
 	const safePause = () => {
 		pcall(pause);
 	};
-	const grain = parseGrain(woodGrain);
 
 	const woodColorMap = writeMap((x, y) => woodOverlay(grain, x, y));
 	const woodRoughMap = writeMap((x, y) => woodRough(grain, x, y));
@@ -188,7 +192,7 @@ export function createDoorMaterials(
 		brassMetalContent,
 	);
 
-	return {
+	const mats: DoorMaterials = {
 		woodName,
 		brassName: "DoorworksSatinBrass",
 		woodGrain: grain,
@@ -203,6 +207,8 @@ export function createDoorMaterials(
 			MetalnessMap: brassMetalContent,
 		}),
 	};
+	materialCache[grain] = mats;
+	return mats;
 }
 
 export function applyWood(
