@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to agents working in this repository.
 
 ## Project Overview
 
@@ -66,6 +66,20 @@ group.bind();
 Authoring a new pair: two `BasePart`s in `Portals`, same `PortalPair`, Front facing the approach side, `CanCollide = false`. Put scenery in `World`. Do not put the portal parts in `World`. ViewportFrames cannot recurse — the partner door shows as bare geometry in the view.
 
 Do not create playground parts, doors, or lighting from a service `onStart`. Play-mode instance edits still do not persist — author in Edit.
+
+## World geometry
+
+Tangible world objects are **edit-time**, not spawned from services on Play.
+
+Break things into **small, named pieces** with maximum control:
+
+- A door station is **three ProceduralModels** (closet door, metal frame + beacon, holder with canister/keypad) — not one mega-model.
+- Inside a model, split **body / hardware / portal plane**. Don't fuse a knob into the slab.
+- Prefer **ProceduralModel** generators (`OnGenerate`) so Size and attributes in Properties regenerate the object.
+- Prefer **EditableMesh** on `MeshPart`s for custom topology: recesses, arches, bevels, anything a box/wedge/cylinder can't do cleanly. Build vertices and triangles, then bake (`AssetService:CreateDataModelContentAsync` + `CreateMeshPartAsync`). Call `parameters.Pause()` before those yielding APIs.
+- Use primitive `Part`s only for simple collision, portal planes, or hardware that already *is* a ball/cylinder.
+- Never fill a volume with a solid slab and overlay decorations — they z-fight. Either cut the shape into the EditableMesh or abut non-overlapping pieces.
+- Never set `BasePart.Position` when assembling; always `CFrame` / `PivotTo` (Position depenetrates and refuses overlaps).
 
 ### Flamework Pattern
 
