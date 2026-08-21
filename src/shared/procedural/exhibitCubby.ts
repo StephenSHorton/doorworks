@@ -3,19 +3,17 @@ import { part } from "./parts";
 export interface ExhibitCubbyParams {
 	title: string;
 	description: string;
-	/** Interior width (X) and depth (Z). Height of walls is separate. */
+	/** Pad size in X (width) and Z (depth). */
 	width?: number;
 	depth?: number;
-	wallHeight?: number;
 }
 
 const FLOOR_COLOR = Color3.fromRGB(36, 38, 44);
-const WALL_COLOR = Color3.fromRGB(28, 30, 36);
 const TRIM = Color3.fromRGB(72, 76, 88);
 
 /**
- * Open-front booth: floor, back, two sides. SurfaceGui on the floor, bottom-right.
- * Local origin is the floor center; floor top is at y = 0.5 (1-stud slab).
+ * Exhibit pad only (no walls). Floor top is at y = 0 so content can sit on Y = 0.
+ * Plaque SurfaceGui is the bottom-right corner from the open (+Z) side.
  */
 export function generateExhibitCubby(
 	target: Instance,
@@ -23,9 +21,7 @@ export function generateExhibitCubby(
 ): Model {
 	const width = params.width ?? 20;
 	const depth = params.depth ?? 14;
-	const wallH = params.wallHeight ?? 12;
 	const floorH = 1;
-	const wallT = 0.4;
 
 	const model = new Instance("Model");
 	model.Name = "Cubby";
@@ -35,42 +31,17 @@ export function generateExhibitCubby(
 		model,
 		"Floor",
 		new Vector3(width, floorH, depth),
-		new CFrame(0, floorH / 2, 0),
+		new CFrame(0, -floorH / 2, 0),
 		FLOOR_COLOR,
 		Enum.Material.SmoothPlastic,
 	);
 	floor.CanCollide = true;
 
-	part(
-		model,
-		"BackWall",
-		new Vector3(width + wallT * 2, wallH, wallT),
-		new CFrame(0, floorH + wallH / 2, -depth / 2 - wallT / 2),
-		WALL_COLOR,
-		Enum.Material.SmoothPlastic,
-	);
-	part(
-		model,
-		"LeftWall",
-		new Vector3(wallT, wallH, depth),
-		new CFrame(-width / 2 - wallT / 2, floorH + wallH / 2, 0),
-		WALL_COLOR,
-		Enum.Material.SmoothPlastic,
-	);
-	part(
-		model,
-		"RightWall",
-		new Vector3(wallT, wallH, depth),
-		new CFrame(width / 2 + wallT / 2, floorH + wallH / 2, 0),
-		WALL_COLOR,
-		Enum.Material.SmoothPlastic,
-	);
-
 	const plaque = part(
 		model,
 		"Plaque",
 		new Vector3(5.5, 0.08, 2.4),
-		new CFrame(-width / 2 + 3.1, floorH + 0.06, depth / 2 - 1.5),
+		new CFrame(-width / 2 + 3.1, 0.06, depth / 2 - 1.5),
 		TRIM,
 		Enum.Material.SmoothPlastic,
 	);
