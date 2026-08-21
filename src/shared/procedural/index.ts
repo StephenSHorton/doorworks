@@ -14,3 +14,7 @@ export {
 	type DoorStationFrameAttributes,
 	generateDoorStationFrame,
 } from "./doorStationFrame";
+export {
+	type ExhibitCubbyParams,
+	generateExhibitCubby,
+} from "./exhibitCubby";
