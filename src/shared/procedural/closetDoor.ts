@@ -1,5 +1,11 @@
 import { CollectionService } from "@rbxts/services";
-import { addBox, addTombstone, bakeMesh, createMesh } from "./editable";
+import {
+	addArchCornerBackings,
+	addBox,
+	addTombstone,
+	bakeMesh,
+	createMesh,
+} from "./editable";
 import { cylinderBetween, part, shade } from "./parts";
 
 export interface ClosetDoorAttributes {
@@ -116,6 +122,16 @@ export function generateClosetDoor(
 		body,
 		new Vector3(0, lockY + lockRail / 2 + upperH / 2, 0),
 		new Vector3(mullion, upperH, depth),
+	);
+	addArchCornerBackings(
+		body,
+		new Vector3(leftX, upperCy, 0),
+		new Vector3(cellW, upperH, depth),
+	);
+	addArchCornerBackings(
+		body,
+		new Vector3(rightX, upperCy, 0),
+		new Vector3(cellW, upperH, depth),
 	);
 
 	const fills = createMesh();

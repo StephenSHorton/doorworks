@@ -63,6 +63,31 @@ export function addBox(
 	addQuad(mesh, n001, n101, n100, n000);
 }
 
+/** Extrude a CCW XY ring into a prism. Side winding matches clockwise-from-outside addQuad. */
+function addPrism(
+	mesh: EditableMesh,
+	ring: Vector3[],
+	zFront: number,
+	zBack: number,
+): void {
+	if (ring.size() < 3) return;
+	const frontIds: number[] = [];
+	const backIds: number[] = [];
+	for (const p of ring) {
+		frontIds.push(mesh.AddVertex(new Vector3(p.X, p.Y, zFront)));
+		backIds.push(mesh.AddVertex(new Vector3(p.X, p.Y, zBack)));
+	}
+	const n = ring.size();
+	for (let i = 0; i < n; i++) {
+		const j = (i + 1) % n;
+		addQuad(mesh, frontIds[i], backIds[i], backIds[j], frontIds[j]);
+	}
+	for (let i = 1; i < n - 1; i++) {
+		addTri(mesh, frontIds[0], frontIds[i + 1], frontIds[i]);
+		addTri(mesh, backIds[0], backIds[i], backIds[i + 1]);
+	}
+}
+
 /**
  * Tombstone extrusion: rectangle with a semicircle on top, extruded in Z.
  * Used for colonial arched upper panels.
@@ -84,8 +109,6 @@ export function addTombstone(
 	}
 
 	const ring: Vector3[] = [];
-	const zFront = center.Z - hz;
-	const zBack = center.Z + hz;
 	const ySpring = center.Y - hy + rectH;
 	const x0 = center.X;
 	const y0 = center.Y - hy;
@@ -105,25 +128,66 @@ export function addTombstone(
 		);
 	}
 	ring.push(new Vector3(x0 - hx, ySpring, 0));
+	addPrism(mesh, ring, center.Z - hz, center.Z + hz);
+}
 
-	const frontIds: number[] = [];
-	const backIds: number[] = [];
-	for (const p of ring) {
-		frontIds.push(mesh.AddVertex(new Vector3(p.X, p.Y, zFront)));
-		backIds.push(mesh.AddVertex(new Vector3(p.X, p.Y, zBack)));
-	}
+/**
+ * Fill the two rectangular-opening corners above a tombstone arch so they
+ * aren't holes. Same depth as `size.Z` (use the frame, not the inset fill).
+ */
+export function addArchCornerBackings(
+	mesh: EditableMesh,
+	center: Vector3,
+	size: Vector3,
+	archSegments = 12,
+): void {
+	const hx = size.X / 2;
+	const hy = size.Y / 2;
+	const hz = size.Z / 2;
+	const r = hx;
+	if (size.Y - r < 0.08) return;
 
-	const n = ring.size();
-	// Side walls: pass verts so clockwise-from-outside addQuad faces outward.
-	// (front[i] → front[j] along a CCW ring would make addQuad point inward.)
-	for (let i = 0; i < n; i++) {
-		const j = (i + 1) % n;
-		addQuad(mesh, frontIds[i], backIds[i], backIds[j], frontIds[j]);
+	const x0 = center.X;
+	const yTop = center.Y + hy;
+	const ySpring = yTop - r;
+	const xL = x0 - hx;
+	const xR = x0 + hx;
+	const zFront = center.Z - hz;
+	const zBack = center.Z + hz;
+
+	const left: Vector3[] = [];
+	left.push(new Vector3(xL, ySpring, 0));
+	left.push(new Vector3(xL, yTop, 0));
+	left.push(new Vector3(x0, yTop, 0));
+	for (let i = 1; i < archSegments; i++) {
+		const t = i / archSegments;
+		const ang = math.pi / 2 + t * (math.pi / 2);
+		left.push(
+			new Vector3(
+				x0 + r * math.cos(ang),
+				ySpring + r * math.sin(ang),
+				0,
+			),
+		);
 	}
-	for (let i = 1; i < n - 1; i++) {
-		addTri(mesh, frontIds[0], frontIds[i + 1], frontIds[i]);
-		addTri(mesh, backIds[0], backIds[i], backIds[i + 1]);
+	addPrism(mesh, left, zFront, zBack);
+
+	const right: Vector3[] = [];
+	right.push(new Vector3(xR, ySpring, 0));
+	right.push(new Vector3(xR, yTop, 0));
+	right.push(new Vector3(x0, yTop, 0));
+	for (let i = 1; i < archSegments; i++) {
+		const t = i / archSegments;
+		const ang = math.pi / 2 - t * (math.pi / 2);
+		right.push(
+			new Vector3(
+				x0 + r * math.cos(ang),
+				ySpring + r * math.sin(ang),
+				0,
+			),
+		);
 	}
+	addPrism(mesh, right, zFront, zBack);
 }
 
 export interface BakeMeshOptions {
