@@ -262,13 +262,8 @@ export function applyWood(
 	part.Color = tint;
 	part.Material = Enum.Material.Wood;
 	part.MaterialVariant = mats.woodName;
-	if (part.IsA("MeshPart") && mats.woodAppearance) {
-		for (const old of part.GetChildren()) {
-			if (old.IsA("SurfaceAppearance")) old.Destroy();
-		}
-		const sa = mats.woodAppearance.Clone();
-		sa.AlphaMode = Enum.AlphaMode.Overlay;
-		sa.Parent = part;
+	for (const old of part.GetChildren()) {
+		if (old.IsA("SurfaceAppearance")) old.Destroy();
 	}
 }
 
@@ -280,13 +275,7 @@ export function applySatinBrass(
 	part.Material = Enum.Material.Metal;
 	part.MaterialVariant = subtle ? mats.brassSubtleName : mats.brassName;
 	part.Reflectance = 0;
-	const src = subtle ? mats.brassSubtleAppearance : mats.brassAppearance;
-	if (part.IsA("MeshPart") && src) {
-		for (const old of part.GetChildren()) {
-			if (old.IsA("SurfaceAppearance")) old.Destroy();
-		}
-		const sa = src.Clone();
-		sa.AlphaMode = Enum.AlphaMode.Overlay;
-		sa.Parent = part;
+	for (const old of part.GetChildren()) {
+		if (old.IsA("SurfaceAppearance")) old.Destroy();
 	}
 }
