@@ -22,11 +22,21 @@ function addTri(
 	const pc = mesh.GetPosition(c);
 	const normal = pb.sub(pa).Cross(pc.sub(pa));
 	const centroid = pa.add(pb).add(pc).mul(1 / 3);
-	if (normal.Dot(centroid.sub(origin)) < 0) {
-		mesh.AddTriangle(a, c, b);
-	} else {
-		mesh.AddTriangle(a, b, c);
-	}
+	const flipped = normal.Dot(centroid.sub(origin)) < 0;
+	const faceId = flipped
+		? mesh.AddTriangle(a, c, b)
+		: mesh.AddTriangle(a, b, c);
+	const paUv = uvFrom(pa);
+	const pbUv = uvFrom(pb);
+	const pcUv = uvFrom(pc);
+	const uvA = mesh.AddUV(paUv);
+	const uvB = mesh.AddUV(flipped ? pcUv : pbUv);
+	const uvC = mesh.AddUV(flipped ? pbUv : pcUv);
+	mesh.SetFaceUVs(faceId, [uvA, uvB, uvC]);
+}
+
+function uvFrom(p: Vector3): Vector2 {
+	return new Vector2(p.X / 2, p.Y / 2);
 }
 
 export function addQuad(

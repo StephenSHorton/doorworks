@@ -19,6 +19,7 @@ export interface ClosetDoorAttributes {
 	RailHeight: number;
 	KnobRight: boolean;
 	Color: Color3;
+	WoodGrain: string;
 	PortalPair: string;
 }
 
@@ -28,6 +29,7 @@ export const DEFAULT_CLOSET_DOOR_ATTRIBUTES: ClosetDoorAttributes = {
 	RailHeight: 0.55,
 	KnobRight: true,
 	Color: Color3.fromRGB(232, 228, 218),
+	WoodGrain: "plank",
 	PortalPair: "playground",
 };
 
@@ -51,7 +53,9 @@ export function generateClosetDoor(
 	const wood = a.Color;
 	const fill = shade(wood, 0.92);
 	const brass = Color3.fromRGB(158, 116, 58);
-	const [matsOk, matsOrErr] = pcall(() => createDoorMaterials(params.pause));
+	const [matsOk, matsOrErr] = pcall(() =>
+		createDoorMaterials(params.pause, a.WoodGrain),
+	);
 	const mats = matsOk ? matsOrErr : undefined;
 	const depth = math.max(size.Z, 0.35);
 	const front = -depth / 2;
@@ -180,8 +184,8 @@ export function generateClosetDoor(
 		pause: params.pause,
 	});
 	if (mats) {
-		applyWood(bodyPart, mats);
-		applyWood(panelPart, mats);
+		applyWood(bodyPart, mats, wood);
+		applyWood(panelPart, mats, fill);
 	}
 
 	const knobX = a.KnobRight
