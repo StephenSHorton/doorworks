@@ -24,6 +24,7 @@ const ClosetDoorGenerator = {
 				...DEFAULT_CLOSET_DOOR_ATTRIBUTES,
 				...parameters.Attributes,
 			},
+			pause: () => parameters.Pause(),
 		});
 	},
 };

@@ -1,5 +1,6 @@
 import { CollectionService } from "@rbxts/services";
-import { disk, part, shade } from "./parts";
+import { addBox, addTombstone, bakeMesh, createMesh } from "./editable";
+import { cylinderBetween, part, shade } from "./parts";
 
 export interface ClosetDoorAttributes {
 	DoorNumber: number;
@@ -22,167 +23,13 @@ export const DEFAULT_CLOSET_DOOR_ATTRIBUTES: ClosetDoorAttributes = {
 export interface ClosetDoorParams {
 	size: Vector3;
 	attributes: ClosetDoorAttributes;
-}
-
-function rectangularMolding(
-	parent: Instance,
-	tag: string,
-	cx: number,
-	cy: number,
-	pw: number,
-	ph: number,
-	z: number,
-	mold: number,
-	thick: number,
-	color: Color3,
-): void {
-	part(
-		parent,
-		`MoldTop${tag}`,
-		new Vector3(pw, mold, thick),
-		new CFrame(cx, cy + ph / 2 - mold / 2, z),
-		color,
-		Enum.Material.Wood,
-	);
-	part(
-		parent,
-		`MoldBottom${tag}`,
-		new Vector3(pw, mold, thick),
-		new CFrame(cx, cy - ph / 2 + mold / 2, z),
-		color,
-		Enum.Material.Wood,
-	);
-	part(
-		parent,
-		`MoldLeft${tag}`,
-		new Vector3(mold, ph, thick),
-		new CFrame(cx - pw / 2 + mold / 2, cy, z),
-		color,
-		Enum.Material.Wood,
-	);
-	part(
-		parent,
-		`MoldRight${tag}`,
-		new Vector3(mold, ph, thick),
-		new CFrame(cx + pw / 2 - mold / 2, cy, z),
-		color,
-		Enum.Material.Wood,
-	);
-}
-
-function colonialPanel(
-	parent: Instance,
-	tag: string,
-	cx: number,
-	cy: number,
-	pw: number,
-	ph: number,
-	front: number,
-	dip: number,
-	fill: Color3,
-	trim: Color3,
-	arched: boolean,
-): void {
-	const mold = math.clamp(math.min(pw, ph) * 0.1, 0.08, 0.14);
-	const fillThick = dip;
-	const moldThick = dip * 0.45;
-	// Fill sits in the pocket: its front face is `dip` behind the slab front.
-	const zFill = front + dip + fillThick / 2;
-	// Molding sits in the pocket lip, overlapping slab + fill via CFrame.
-	const zMold = front + moldThick / 2;
-	const innerW = pw - mold * 2;
-	const innerH = ph - mold * 2;
-
-	if (!arched) {
-		part(
-			parent,
-			`PanelFill${tag}`,
-			new Vector3(innerW, innerH, fillThick),
-			new CFrame(cx, cy, zFill),
-			fill,
-			Enum.Material.Wood,
-		);
-		rectangularMolding(
-			parent,
-			tag,
-			cx,
-			cy,
-			pw,
-			ph,
-			zMold,
-			mold,
-			moldThick,
-			trim,
-		);
-		return;
-	}
-
-	const archR = innerW / 2;
-	const rectH = math.max(innerH - archR * 0.92, innerH * 0.42);
-	const rectBottom = cy - ph / 2 + mold;
-	const rectCy = rectBottom + rectH / 2;
-	const archCy = rectBottom + rectH;
-
-	part(
-		parent,
-		`PanelFill${tag}`,
-		new Vector3(innerW, rectH, fillThick),
-		new CFrame(cx, rectCy, zFill),
-		fill,
-		Enum.Material.Wood,
-	);
-	disk(
-		parent,
-		`PanelArch${tag}`,
-		innerW,
-		fillThick,
-		new CFrame(cx, archCy, zFill),
-		fill,
-		Enum.Material.Wood,
-	);
-	disk(
-		parent,
-		`PanelArchMold${tag}`,
-		innerW + mold * 1.7,
-		moldThick,
-		new CFrame(cx, archCy, zMold),
-		trim,
-		Enum.Material.Wood,
-	);
-
-	const moldH = rectH + mold;
-	const moldCy = rectBottom - mold / 2 + moldH / 2;
-	part(
-		parent,
-		`MoldBottom${tag}`,
-		new Vector3(pw, mold, moldThick),
-		new CFrame(cx, cy - ph / 2 + mold / 2, zMold),
-		trim,
-		Enum.Material.Wood,
-	);
-	part(
-		parent,
-		`MoldLeft${tag}`,
-		new Vector3(mold, moldH, moldThick),
-		new CFrame(cx - pw / 2 + mold / 2, moldCy, zMold),
-		trim,
-		Enum.Material.Wood,
-	);
-	part(
-		parent,
-		`MoldRight${tag}`,
-		new Vector3(mold, moldH, moldThick),
-		new CFrame(cx + pw / 2 - mold / 2, moldCy, zMold),
-		trim,
-		Enum.Material.Wood,
-	);
+	pause: () => void;
 }
 
 /**
- * Four-panel colonial closet door. Recesses are CFrame'd into the slab
- * (never Position — that depenetrates). Portal plane is invisible.
- *
- * @see https://create.roblox.com/docs/parts/procedural-models
+ * Four-panel colonial closet door. Wood body is one EditableMesh (frame +
+ * inset fills; arched uppers) so recesses are real topology, not overlapping
+ * Parts. Hardware stays separate primitives. CFrame only.
  */
 export function generateClosetDoor(
 	target: Instance,
@@ -191,7 +38,6 @@ export function generateClosetDoor(
 	const size = params.size;
 	const a = params.attributes;
 	const wood = a.Color;
-	const trim = shade(wood, 0.88);
 	const fill = shade(wood, 0.92);
 	const brass = Color3.fromRGB(196, 152, 72);
 	const depth = math.max(size.Z, 0.35);
@@ -201,8 +47,8 @@ export function generateClosetDoor(
 	const portal = part(
 		target,
 		"PortalPlane",
-		new Vector3(size.X - 0.1, size.Y - 0.1, 0.2),
-		new CFrame(0, 0, depth / 2 - 0.05),
+		new Vector3(size.X - 0.1, size.Y - 0.1, 0.12),
+		new CFrame(0, 0, depth / 2 + 0.08),
 		Color3.fromRGB(18, 18, 24),
 		Enum.Material.SmoothPlastic,
 	);
@@ -212,15 +58,6 @@ export function generateClosetDoor(
 	portal.SetAttribute("PortalPair", a.PortalPair);
 	CollectionService.AddTag(portal, "ImmersivePortal");
 
-	part(
-		target,
-		"Slab",
-		new Vector3(size.X, size.Y, depth),
-		new CFrame(0, 0, 0),
-		wood,
-		Enum.Material.Wood,
-	);
-
 	const stile = math.clamp(a.StileWidth, 0.35, size.X / 3);
 	const rail = math.clamp(a.RailHeight, 0.35, size.Y / 5);
 	const innerW = size.X - stile * 2;
@@ -228,137 +65,131 @@ export function generateClosetDoor(
 	const mullion = stile * 0.55;
 	const lockRail = rail * 0.85;
 
-	part(
-		target,
-		"LeftStile",
-		new Vector3(stile, size.Y, depth),
-		new CFrame(-size.X / 2 + stile / 2, 0, 0),
-		wood,
-		Enum.Material.Wood,
-	);
-	part(
-		target,
-		"RightStile",
-		new Vector3(stile, size.Y, depth),
-		new CFrame(size.X / 2 - stile / 2, 0, 0),
-		wood,
-		Enum.Material.Wood,
-	);
-	part(
-		target,
-		"TopRail",
-		new Vector3(innerW, rail, depth),
-		new CFrame(0, size.Y / 2 - rail / 2, 0),
-		wood,
-		Enum.Material.Wood,
-	);
-	part(
-		target,
-		"BottomRail",
-		new Vector3(innerW, rail, depth),
-		new CFrame(0, -size.Y / 2 + rail / 2, 0),
-		wood,
-		Enum.Material.Wood,
-	);
-
 	const lowerShare = 0.4;
 	const lowerH = innerH * lowerShare;
 	const upperH = innerH - lowerH - lockRail;
 	const lockY = -innerH / 2 + lowerH + lockRail / 2;
-
-	part(
-		target,
-		"LockRail",
-		new Vector3(innerW, lockRail, depth),
-		new CFrame(0, lockY, 0),
-		wood,
-		Enum.Material.Wood,
-	);
-	part(
-		target,
-		"Mullion",
-		new Vector3(mullion, innerH, depth),
-		new CFrame(0, 0, 0),
-		wood,
-		Enum.Material.Wood,
-	);
 
 	const cellW = (innerW - mullion) / 2;
 	const leftX = -innerW / 2 + cellW / 2;
 	const rightX = innerW / 2 - cellW / 2;
 	const lowerCy = -innerH / 2 + lowerH / 2;
 	const upperCy = lockY + lockRail / 2 + upperH / 2;
-	const pad = 0.06;
+	const gap = 0.02;
+	const fillFront = front + dip;
+	const fillBack = depth / 2;
+	const fillThick = math.max(fillBack - fillFront, 0.08);
+	const zFill = (fillFront + fillBack) / 2;
 
-	colonialPanel(
-		target,
-		"LL",
-		leftX,
-		lowerCy,
-		cellW - pad,
-		lowerH - pad,
-		front,
-		dip,
-		fill,
-		trim,
-		false,
+	const body = createMesh();
+	addBox(
+		body,
+		new Vector3(-size.X / 2 + stile / 2, 0, 0),
+		new Vector3(stile, size.Y, depth),
 	);
-	colonialPanel(
-		target,
-		"LR",
-		rightX,
-		lowerCy,
-		cellW - pad,
-		lowerH - pad,
-		front,
-		dip,
-		fill,
-		trim,
-		false,
+	addBox(
+		body,
+		new Vector3(size.X / 2 - stile / 2, 0, 0),
+		new Vector3(stile, size.Y, depth),
 	);
-	colonialPanel(
-		target,
-		"UL",
-		leftX,
-		upperCy,
-		cellW - pad,
-		upperH - pad,
-		front,
-		dip,
-		fill,
-		trim,
-		true,
+	addBox(
+		body,
+		new Vector3(0, size.Y / 2 - rail / 2, 0),
+		new Vector3(innerW, rail, depth),
 	);
-	colonialPanel(
-		target,
-		"UR",
-		rightX,
-		upperCy,
-		cellW - pad,
-		upperH - pad,
-		front,
-		dip,
-		fill,
-		trim,
-		true,
+	addBox(
+		body,
+		new Vector3(0, -size.Y / 2 + rail / 2, 0),
+		new Vector3(innerW, rail, depth),
+	);
+	addBox(
+		body,
+		new Vector3(0, lockY, 0),
+		new Vector3(innerW, lockRail, depth),
+	);
+	addBox(
+		body,
+		new Vector3(0, -innerH / 2 + lowerH / 2, 0),
+		new Vector3(mullion, lowerH, depth),
+	);
+	addBox(
+		body,
+		new Vector3(0, lockY + lockRail / 2 + upperH / 2, 0),
+		new Vector3(mullion, upperH, depth),
 	);
 
-	const knobX = a.KnobRight ? size.X / 2 - stile / 2 : -size.X / 2 + stile / 2;
-	part(
-		target,
-		"Knob",
-		new Vector3(0.22, 0.22, 0.22),
-		new CFrame(knobX, lockY + 0.12, front - 0.12),
-		brass,
-		Enum.Material.Metal,
-		Enum.PartType.Ball,
+	const fills = createMesh();
+	addBox(
+		fills,
+		new Vector3(leftX, lowerCy, zFill),
+		new Vector3(cellW - gap, lowerH - gap, fillThick),
 	);
+	addBox(
+		fills,
+		new Vector3(rightX, lowerCy, zFill),
+		new Vector3(cellW - gap, lowerH - gap, fillThick),
+	);
+	addTombstone(
+		fills,
+		new Vector3(leftX, upperCy, zFill),
+		new Vector3(cellW - gap, upperH - gap, fillThick),
+	);
+	addTombstone(
+		fills,
+		new Vector3(rightX, upperCy, zFill),
+		new Vector3(cellW - gap, upperH - gap, fillThick),
+	);
+
+	bakeMesh(body, {
+		name: "DoorBody",
+		parent: target,
+		color: wood,
+		material: Enum.Material.Wood,
+		cframe: new CFrame(),
+		pause: params.pause,
+	});
+	bakeMesh(fills, {
+		name: "DoorPanels",
+		parent: target,
+		color: fill,
+		material: Enum.Material.Wood,
+		cframe: new CFrame(),
+		pause: params.pause,
+	});
+
+	const knobX = a.KnobRight
+		? size.X / 2 - stile / 2
+		: -size.X / 2 + stile / 2;
+	const knobY = lockY + 0.18;
+	const knobD = 0.5;
+	const stemLen = 0.42;
+	const stemD = 0.14;
+	const plateThick = 0.04;
+
 	part(
 		target,
 		"LockPlate",
-		new Vector3(0.16, 0.4, 0.05),
-		new CFrame(knobX, lockY - 0.28, front - 0.02),
+		new Vector3(0.3, 0.72, plateThick),
+		new CFrame(knobX, lockY - 0.22, front - plateThick / 2),
 		brass,
 		Enum.Material.Metal,
+	);
+	cylinderBetween(
+		target,
+		"KnobStem",
+		stemD,
+		new Vector3(knobX, knobY, front),
+		new Vector3(knobX, knobY, front - stemLen),
+		brass,
+		Enum.Material.Metal,
+	);
+	part(
+		target,
+		"Knob",
+		new Vector3(knobD, knobD, knobD),
+		new CFrame(knobX, knobY, front - stemLen - knobD / 2 + 0.03),
+		brass,
+		Enum.Material.Metal,
+		Enum.PartType.Ball,
 	);
 }
