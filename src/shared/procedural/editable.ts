@@ -63,6 +63,44 @@ export function addBox(
 	addQuad(mesh, n001, n101, n100, n000);
 }
 
+const ARCH_SEGMENTS = 24;
+
+/** Shallow circular segment (not a semicircle — that reads as a picket). */
+function archMetrics(width: number, height: number): {
+	hx: number;
+	rise: number;
+	radius: number;
+	thetaRight: number;
+} {
+	const hx = width / 2;
+	const rise = math.clamp(width * 0.2, 0.08, height * 0.22);
+	const radius = (hx * hx + rise * rise) / (2 * rise);
+	const thetaRight = math.atan2(radius - rise, hx);
+	return { hx, rise, radius, thetaRight };
+}
+
+function pushArc(
+	ring: Vector3[],
+	x0: number,
+	yCenter: number,
+	radius: number,
+	angStart: number,
+	angEnd: number,
+	segments: number,
+): void {
+	for (let i = 1; i < segments; i++) {
+		const t = i / segments;
+		const ang = angStart + t * (angEnd - angStart);
+		ring.push(
+			new Vector3(
+				x0 + radius * math.cos(ang),
+				yCenter + radius * math.sin(ang),
+				0,
+			),
+		);
+	}
+}
+
 /** Extrude a CCW XY ring into a prism. Side winding matches clockwise-from-outside addQuad. */
 function addPrism(
 	mesh: EditableMesh,
@@ -89,104 +127,78 @@ function addPrism(
 }
 
 /**
- * Tombstone extrusion: rectangle with a semicircle on top, extruded in Z.
- * Used for colonial arched upper panels.
+ * Rectangle with a shallow segmental arch on top (colonial, not a picket).
  */
 export function addTombstone(
 	mesh: EditableMesh,
 	center: Vector3,
 	size: Vector3,
-	archSegments = 12,
 ): void {
-	const hx = size.X / 2;
-	const hy = size.Y / 2;
-	const hz = size.Z / 2;
-	const r = hx;
-	const rectH = size.Y - r;
-	if (rectH < 0.08) {
+	const { hx, rise, radius, thetaRight } = archMetrics(size.X, size.Y);
+	if (size.Y - rise < 0.08) {
 		addBox(mesh, center, size);
 		return;
 	}
 
-	const ring: Vector3[] = [];
-	const ySpring = center.Y - hy + rectH;
 	const x0 = center.X;
-	const y0 = center.Y - hy;
+	const yTop = center.Y + size.Y / 2;
+	const ySpring = yTop - rise;
+	const yCenter = yTop - radius;
+	const y0 = center.Y - size.Y / 2;
+	const thetaLeft = math.pi - thetaRight;
 
+	const ring: Vector3[] = [];
 	ring.push(new Vector3(x0 - hx, y0, 0));
 	ring.push(new Vector3(x0 + hx, y0, 0));
 	ring.push(new Vector3(x0 + hx, ySpring, 0));
-	for (let i = 1; i < archSegments; i++) {
-		const t = i / archSegments;
-		const ang = t * math.pi;
-		ring.push(
-			new Vector3(
-				x0 + r * math.cos(ang),
-				ySpring + r * math.sin(ang),
-				0,
-			),
-		);
-	}
+	pushArc(
+		ring,
+		x0,
+		yCenter,
+		radius,
+		thetaRight,
+		thetaLeft,
+		ARCH_SEGMENTS,
+	);
 	ring.push(new Vector3(x0 - hx, ySpring, 0));
-	addPrism(mesh, ring, center.Z - hz, center.Z + hz);
+	addPrism(mesh, ring, center.Z - size.Z / 2, center.Z + size.Z / 2);
 }
 
 /**
- * Fill the two rectangular-opening corners above a tombstone arch so they
- * aren't holes. Same depth as `size.Z` (use the frame, not the inset fill).
+ * Fill the two corners of a rectangular opening above a shallow arch so
+ * they aren't holes. Inner edge matches addTombstone for the same size.
  */
 export function addArchCornerBackings(
 	mesh: EditableMesh,
 	center: Vector3,
 	size: Vector3,
-	archSegments = 12,
 ): void {
-	const hx = size.X / 2;
-	const hy = size.Y / 2;
-	const hz = size.Z / 2;
-	const r = hx;
-	if (size.Y - r < 0.08) return;
+	const { hx, rise, radius, thetaRight } = archMetrics(size.X, size.Y);
+	if (size.Y - rise < 0.08) return;
 
 	const x0 = center.X;
-	const yTop = center.Y + hy;
-	const ySpring = yTop - r;
+	const yTop = center.Y + size.Y / 2;
+	const ySpring = yTop - rise;
+	const yCenter = yTop - radius;
 	const xL = x0 - hx;
 	const xR = x0 + hx;
-	const zFront = center.Z - hz;
-	const zBack = center.Z + hz;
+	const zFront = center.Z - size.Z / 2;
+	const zBack = center.Z + size.Z / 2;
+	const thetaLeft = math.pi - thetaRight;
+	const thetaPeak = math.pi / 2;
 
 	const left: Vector3[] = [];
 	left.push(new Vector3(xL, ySpring, 0));
 	left.push(new Vector3(xL, yTop, 0));
 	left.push(new Vector3(x0, yTop, 0));
-	for (let i = 1; i < archSegments; i++) {
-		const t = i / archSegments;
-		const ang = math.pi / 2 + t * (math.pi / 2);
-		left.push(
-			new Vector3(
-				x0 + r * math.cos(ang),
-				ySpring + r * math.sin(ang),
-				0,
-			),
-		);
-	}
+	pushArc(left, x0, yCenter, radius, thetaPeak, thetaLeft, ARCH_SEGMENTS);
 	addPrism(mesh, left, zFront, zBack);
 
 	const right: Vector3[] = [];
 	right.push(new Vector3(xR, ySpring, 0));
 	right.push(new Vector3(xR, yTop, 0));
 	right.push(new Vector3(x0, yTop, 0));
-	for (let i = 1; i < archSegments; i++) {
-		const t = i / archSegments;
-		const ang = math.pi / 2 - t * (math.pi / 2);
-		right.push(
-			new Vector3(
-				x0 + r * math.cos(ang),
-				ySpring + r * math.sin(ang),
-				0,
-			),
-		);
-	}
+	pushArc(right, x0, yCenter, radius, thetaPeak, thetaRight, ARCH_SEGMENTS);
 	addPrism(mesh, right, zFront, zBack);
 }
 

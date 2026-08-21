@@ -126,12 +126,12 @@ export function generateClosetDoor(
 	addArchCornerBackings(
 		body,
 		new Vector3(leftX, upperCy, 0),
-		new Vector3(cellW, upperH, depth),
+		new Vector3(cellW - gap, upperH - gap, depth),
 	);
 	addArchCornerBackings(
 		body,
 		new Vector3(rightX, upperCy, 0),
-		new Vector3(cellW, upperH, depth),
+		new Vector3(cellW - gap, upperH - gap, depth),
 	);
 
 	const fills = createMesh();
