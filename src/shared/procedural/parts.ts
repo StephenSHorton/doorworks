@@ -31,7 +31,10 @@ export function shade(color: Color3, mul: number): Color3 {
 	);
 }
 
-/** Cylinder whose axis is the part's local Y. Rotate the CFrame to aim it. */
+/**
+ * PartType.Cylinder is oriented along the **X** axis (Size.X = length,
+ * Size.Y/Z = diameter). Rotate the CFrame so local X aims the way you want.
+ */
 export function cylinder(
 	parent: Instance,
 	name: string,
@@ -44,7 +47,7 @@ export function cylinder(
 	return part(
 		parent,
 		name,
-		new Vector3(diameter, length, diameter),
+		new Vector3(length, diameter, diameter),
 		cframe,
 		color,
 		material,
@@ -52,7 +55,7 @@ export function cylinder(
 	);
 }
 
-/** Cylinder whose Y-axis runs from `from` to `to`. */
+/** Cylinder whose X-axis runs from `from` to `to`. */
 export function cylinderBetween(
 	parent: Instance,
 	name: string,
@@ -62,11 +65,10 @@ export function cylinderBetween(
 	color: Color3,
 	material: Enum.Material,
 ): Part {
-	const delta = to.sub(from);
-	const length = delta.Magnitude;
+	const length = to.sub(from).Magnitude;
 	const mid = from.Lerp(to, 0.5);
-	// lookAt aims -Z at `to`; -90° around X maps the cylinder's Y-axis onto that.
-	const cf = CFrame.lookAt(mid, to).mul(CFrame.Angles(-math.pi / 2, 0, 0));
+	// lookAt aims -Z at `to`; +90° around Y maps the cylinder's X-axis onto that.
+	const cf = CFrame.lookAt(mid, to).mul(CFrame.Angles(0, math.pi / 2, 0));
 	return cylinder(parent, name, diameter, length, cf, color, material);
 }
 
@@ -84,7 +86,7 @@ export function disk(
 		name,
 		diameter,
 		thickness,
-		cframe.mul(CFrame.Angles(math.rad(90), 0, 0)),
+		cframe.mul(CFrame.Angles(0, math.pi / 2, 0)),
 		color,
 		material,
 	);
