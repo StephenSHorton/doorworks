@@ -117,26 +117,33 @@ function addPrism(
 	ring: Vector3[],
 	zFront: number,
 	zBack: number,
+	fanIndex = 0,
 ): void {
 	if (ring.size() < 3) return;
-	let sx = 0;
-	let sy = 0;
+	let minX = math.huge;
+	let minY = math.huge;
+	let maxX = -math.huge;
+	let maxY = -math.huge;
 	for (const p of ring) {
-		sx += p.X;
-		sy += p.Y;
+		minX = math.min(minX, p.X);
+		minY = math.min(minY, p.Y);
+		maxX = math.max(maxX, p.X);
+		maxY = math.max(maxY, p.Y);
 	}
 	const origin = new Vector3(
-		sx / ring.size(),
-		sy / ring.size(),
+		(minX + maxX) / 2,
+		(minY + maxY) / 2,
 		(zFront + zBack) / 2,
 	);
 	const frontIds: number[] = [];
 	const backIds: number[] = [];
-	for (const p of ring) {
+	const n = ring.size();
+	const start = math.clamp(fanIndex, 0, n - 1);
+	for (let k = 0; k < n; k++) {
+		const p = ring[(start + k) % n];
 		frontIds.push(mesh.AddVertex(new Vector3(p.X, p.Y, zFront)));
 		backIds.push(mesh.AddVertex(new Vector3(p.X, p.Y, zBack)));
 	}
-	const n = ring.size();
 	for (let i = 0; i < n; i++) {
 		const j = (i + 1) % n;
 		addQuad(mesh, frontIds[i], backIds[i], backIds[j], frontIds[j], origin);
@@ -213,14 +220,15 @@ export function addArchCornerBackings(
 	left.push(new Vector3(xL, yTop, 0));
 	left.push(new Vector3(x0, yTop, 0));
 	pushArc(left, x0, yCenter, radius, thetaPeak, thetaLeft, ARCH_SEGMENTS);
-	addPrism(mesh, left, zFront, zBack);
+	// Fan from the outer square corner — the spring vertex is concave.
+	addPrism(mesh, left, zFront, zBack, 1);
 
 	const right: Vector3[] = [];
 	right.push(new Vector3(xR, ySpring, 0));
 	right.push(new Vector3(xR, yTop, 0));
 	right.push(new Vector3(x0, yTop, 0));
 	pushArc(right, x0, yCenter, radius, thetaPeak, thetaRight, ARCH_SEGMENTS);
-	addPrism(mesh, right, zFront, zBack);
+	addPrism(mesh, right, zFront, zBack, 1);
 }
 
 export interface BakeMeshOptions {

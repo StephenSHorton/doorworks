@@ -64,23 +64,10 @@ export function cylinderBetween(
 ): Part {
 	const delta = to.sub(from);
 	const length = delta.Magnitude;
-	const y = delta.Unit;
-	const ref =
-		math.abs(y.Dot(new Vector3(0, 1, 0))) < 0.9
-			? new Vector3(0, 1, 0)
-			: new Vector3(1, 0, 0);
-	const x = ref.Cross(y).Unit;
-	const z = x.Cross(y).Unit;
 	const mid = from.Lerp(to, 0.5);
-	return cylinder(
-		parent,
-		name,
-		diameter,
-		length,
-		CFrame.fromMatrix(mid, x, y, z),
-		color,
-		material,
-	);
+	// lookAt aims -Z at `to`; -90° around X maps the cylinder's Y-axis onto that.
+	const cf = CFrame.lookAt(mid, to).mul(CFrame.Angles(-math.pi / 2, 0, 0));
+	return cylinder(parent, name, diameter, length, cf, color, material);
 }
 
 export function disk(
