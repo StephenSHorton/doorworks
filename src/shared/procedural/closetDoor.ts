@@ -6,6 +6,11 @@ import {
 	bakeMesh,
 	createMesh,
 } from "./editable";
+import {
+	applySatinBrass,
+	applyWood,
+	createDoorMaterials,
+} from "./materials";
 import { cylinderBetween, part, shade } from "./parts";
 
 export interface ClosetDoorAttributes {
@@ -45,7 +50,9 @@ export function generateClosetDoor(
 	const a = params.attributes;
 	const wood = a.Color;
 	const fill = shade(wood, 0.92);
-	const brass = Color3.fromRGB(196, 152, 72);
+	const brass = Color3.fromRGB(158, 116, 58);
+	const [matsOk, matsOrErr] = pcall(() => createDoorMaterials(params.pause));
+	const mats = matsOk ? matsOrErr : undefined;
 	const depth = math.max(size.Z, 0.35);
 	const front = -depth / 2;
 	const dip = math.clamp(depth * 0.35, 0.1, 0.16);
@@ -156,7 +163,7 @@ export function generateClosetDoor(
 		new Vector3(cellW - gap, upperH - gap, fillThick),
 	);
 
-	bakeMesh(body, {
+	const bodyPart = bakeMesh(body, {
 		name: "DoorBody",
 		parent: target,
 		color: wood,
@@ -164,7 +171,7 @@ export function generateClosetDoor(
 		cframe: new CFrame(),
 		pause: params.pause,
 	});
-	bakeMesh(fills, {
+	const panelPart = bakeMesh(fills, {
 		name: "DoorPanels",
 		parent: target,
 		color: fill,
@@ -172,6 +179,10 @@ export function generateClosetDoor(
 		cframe: new CFrame(),
 		pause: params.pause,
 	});
+	if (mats) {
+		applyWood(bodyPart, mats);
+		applyWood(panelPart, mats);
+	}
 
 	const knobX = a.KnobRight
 		? size.X / 2 - stile / 2
@@ -184,7 +195,7 @@ export function generateClosetDoor(
 	const plateThick = 0.04;
 	const stemEnd = front - stemLen;
 
-	part(
+	const plate = part(
 		target,
 		"LockPlate",
 		new Vector3(0.3, 0.72, plateThick),
@@ -192,7 +203,7 @@ export function generateClosetDoor(
 		brass,
 		Enum.Material.Metal,
 	);
-	cylinderBetween(
+	const stem = cylinderBetween(
 		target,
 		"KnobStem",
 		stemD,
@@ -201,7 +212,7 @@ export function generateClosetDoor(
 		brass,
 		Enum.Material.Metal,
 	);
-	cylinderBetween(
+	const knob = cylinderBetween(
 		target,
 		"Knob",
 		knobD,
@@ -210,4 +221,12 @@ export function generateClosetDoor(
 		brass,
 		Enum.Material.Metal,
 	);
+	plate.Reflectance = 0;
+	stem.Reflectance = 0;
+	knob.Reflectance = 0;
+	if (mats) {
+		applySatinBrass(plate, mats);
+		applySatinBrass(stem, mats);
+		applySatinBrass(knob, mats);
+	}
 }

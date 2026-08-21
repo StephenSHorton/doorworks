@@ -118,6 +118,7 @@ function addPrism(
 	zFront: number,
 	zBack: number,
 	fanIndex = 0,
+	originHint?: Vector3,
 ): void {
 	if (ring.size() < 3) return;
 	let minX = math.huge;
@@ -130,11 +131,13 @@ function addPrism(
 		maxX = math.max(maxX, p.X);
 		maxY = math.max(maxY, p.Y);
 	}
-	const origin = new Vector3(
-		(minX + maxX) / 2,
-		(minY + maxY) / 2,
-		(zFront + zBack) / 2,
-	);
+	const origin =
+		originHint ??
+		new Vector3(
+			(minX + maxX) / 2,
+			(minY + maxY) / 2,
+			(zFront + zBack) / 2,
+		);
 	const frontIds: number[] = [];
 	const backIds: number[] = [];
 	const n = ring.size();
@@ -220,15 +223,30 @@ export function addArchCornerBackings(
 	left.push(new Vector3(xL, yTop, 0));
 	left.push(new Vector3(x0, yTop, 0));
 	pushArc(left, x0, yCenter, radius, thetaPeak, thetaLeft, ARCH_SEGMENTS);
-	// Fan from the outer square corner — the spring vertex is concave.
-	addPrism(mesh, left, zFront, zBack, 1);
+	const zMid = (zFront + zBack) / 2;
+	// AABB center of a spandrel sits in the arched hole and flips soffit faces.
+	addPrism(
+		mesh,
+		left,
+		zFront,
+		zBack,
+		1,
+		new Vector3(xL + hx * 0.12, yTop - rise * 0.2, zMid),
+	);
 
 	const right: Vector3[] = [];
 	right.push(new Vector3(xR, ySpring, 0));
 	right.push(new Vector3(xR, yTop, 0));
 	right.push(new Vector3(x0, yTop, 0));
 	pushArc(right, x0, yCenter, radius, thetaPeak, thetaRight, ARCH_SEGMENTS);
-	addPrism(mesh, right, zFront, zBack, 1);
+	addPrism(
+		mesh,
+		right,
+		zFront,
+		zBack,
+		1,
+		new Vector3(xR - hx * 0.12, yTop - rise * 0.2, zMid),
+	);
 }
 
 export interface BakeMeshOptions {
