@@ -37,11 +37,18 @@ export function generateExhibitCubby(
 	);
 	floor.CanCollide = true;
 
+	// Long axis is local X (5.5). +90° Y is CCW from above; extents become
+	// 2.4 in X and 5.5 in Z. Sit it in the front-right corner (−X, +Z).
+	const plaqueSize = new Vector3(5.5, 0.08, 2.4);
 	const plaque = part(
 		model,
 		"Plaque",
-		new Vector3(5.5, 0.08, 2.4),
-		new CFrame(-width / 2 + 3.1, 0.06, depth / 2 - 1.5),
+		plaqueSize,
+		new CFrame(
+			-width / 2 + plaqueSize.Z / 2 + 0.15,
+			0.06,
+			depth / 2 - plaqueSize.X / 2 - 0.15,
+		).mul(CFrame.Angles(0, math.pi / 2, 0)),
 		TRIM,
 		Enum.Material.SmoothPlastic,
 	);
