@@ -177,10 +177,12 @@ export function generateClosetDoor(
 		? size.X / 2 - stile / 2
 		: -size.X / 2 + stile / 2;
 	const knobY = lockY + 0.18;
-	const knobD = 0.5;
-	const stemLen = 0.42;
-	const stemD = 0.14;
+	const knobD = 0.4;
+	const knobThick = 0.12;
+	const stemLen = 0.12;
+	const stemD = 0.1;
 	const plateThick = 0.04;
+	const stemEnd = front - stemLen;
 
 	part(
 		target,
@@ -195,17 +197,17 @@ export function generateClosetDoor(
 		"KnobStem",
 		stemD,
 		new Vector3(knobX, knobY, front),
-		new Vector3(knobX, knobY, front - stemLen),
+		new Vector3(knobX, knobY, stemEnd),
 		brass,
 		Enum.Material.Metal,
 	);
-	part(
+	cylinderBetween(
 		target,
 		"Knob",
-		new Vector3(knobD, knobD, knobD),
-		new CFrame(knobX, knobY, front - stemLen - knobD / 2 + 0.03),
+		knobD,
+		new Vector3(knobX, knobY, stemEnd + 0.02),
+		new Vector3(knobX, knobY, stemEnd - knobThick),
 		brass,
 		Enum.Material.Metal,
-		Enum.PartType.Ball,
 	);
 }
