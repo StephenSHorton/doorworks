@@ -1,16 +1,18 @@
-import { cylinderBetween, part } from "./parts";
+import { cylinder, part } from "./parts";
 
 export type FrameStyle = "channel" | "industrial" | "strip" | "slim";
 
 export interface DoorStationFrameAttributes {
 	DoorNumber: number;
 	Style: string;
+	KnobRight: boolean;
 }
 
 export const DEFAULT_DOOR_STATION_FRAME_ATTRIBUTES: DoorStationFrameAttributes =
 	{
 		DoorNumber: 12,
 		Style: "channel",
+		KnobRight: true,
 	};
 
 export const FRAME_STYLES: FrameStyle[] = [
@@ -122,29 +124,32 @@ export function generateDoorStationFrame(
 	);
 
 	if (style === "channel") {
-		const lampH = 0.52;
-		const lampD = 0.36;
-		const cz = -frameD / 2 + 0.1;
-		const baseY = h / 2 + headerH + 0.04;
-		const base = new Vector3(0, baseY, cz);
-		const tip = new Vector3(0, baseY + lampH, cz);
-		const midY = baseY + lampH / 2;
-		const beacon = cylinderBetween(
+		const lampD = 0.34;
+		const lampT = 0.08;
+		const ringD = 0.5;
+		const ringT = 0.07;
+		const side = params.attributes.KnobRight ? 1 : -1;
+		const bx = side * (w / 2 - 0.35);
+		const by = h / 2 + headerH / 2;
+		const faceZ = z - frameD / 2;
+		// Cylinder X-axis toward the front (−Z).
+		const facing = CFrame.Angles(0, math.pi / 2, 0);
+		const beacon = cylinder(
 			target,
 			"Beacon",
 			lampD,
-			base,
-			tip,
+			lampT,
+			new CFrame(bx, by, faceZ - lampT / 2).mul(facing),
 			NEON_RED,
 			Enum.Material.Neon,
 		);
 		addLight(beacon, 1.3, 12);
-		cylinderBetween(
+		cylinder(
 			target,
 			"BeaconRing",
-			lampD + 0.28,
-			new Vector3(0, midY - 0.05, cz),
-			new Vector3(0, midY + 0.05, cz),
+			ringD,
+			ringT,
+			new CFrame(bx, by, faceZ - ringT / 2 + 0.01).mul(facing),
 			METAL,
 			Enum.Material.Metal,
 		);
