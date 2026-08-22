@@ -1,94 +1,178 @@
 import { part } from "./parts";
 
+export type FrameStyle = "channel" | "industrial" | "strip" | "slim";
+
 export interface DoorStationFrameAttributes {
 	DoorNumber: number;
+	Style: string;
 }
 
 export const DEFAULT_DOOR_STATION_FRAME_ATTRIBUTES: DoorStationFrameAttributes =
 	{
 		DoorNumber: 12,
+		Style: "channel",
 	};
 
-/** Metal dock around the door — header, sides, back, red beacon. Not used yet. */
+export const FRAME_STYLES: FrameStyle[] = [
+	"channel",
+	"industrial",
+	"strip",
+	"slim",
+];
+
+function parseStyle(value: string): FrameStyle {
+	for (const s of FRAME_STYLES) {
+		if (s === value) return s;
+	}
+	return "channel";
+}
+
+const METAL = Color3.fromRGB(150, 154, 160);
+const METAL_DARK = Color3.fromRGB(78, 82, 90);
+const METAL_WARM = Color3.fromRGB(118, 110, 102);
+const NEON_RED = Color3.fromRGB(220, 36, 40);
+
+function addLight(parent: BasePart, brightness: number, range: number): void {
+	const light = new Instance("PointLight");
+	light.Color = Color3.fromRGB(255, 56, 56);
+	light.Brightness = brightness;
+	light.Range = range;
+	light.Parent = parent;
+}
+
+/**
+ * Separate metal surround for a closet door. Origin is the door slab center
+ * (same space as generateClosetDoor). Equal jambs, heavier header, thin sill.
+ */
 export function generateDoorStationFrame(
 	target: Instance,
 	params: { size: Vector3; attributes: DoorStationFrameAttributes },
 ): void {
 	const size = params.size;
-	const depth = math.max(size.Z, 0.55);
-	const metal = Color3.fromRGB(148, 152, 158);
-	const metalDark = Color3.fromRGB(92, 96, 102);
-	const extraX = 1.35;
-	const extraY = 1.7;
-	const backZ = depth / 2 + 0.55;
+	const style = parseStyle(params.attributes.Style);
+	const w = size.X;
+	const h = size.Y;
+	const d = math.max(size.Z, 0.4);
+
+	let jambW = 0.5;
+	let headerH = 0.8;
+	let sillH = 0.2;
+	let frameD = d + 0.18;
+	let metal = METAL;
+	let headerMetal = METAL;
+
+	if (style === "industrial") {
+		jambW = 0.7;
+		headerH = 1.05;
+		sillH = 0.28;
+		frameD = d + 0.28;
+		metal = METAL_DARK;
+		headerMetal = METAL;
+	} else if (style === "strip") {
+		jambW = 0.48;
+		headerH = 0.7;
+		sillH = 0.16;
+		frameD = d + 0.14;
+		metal = METAL;
+		headerMetal = METAL_DARK;
+	} else if (style === "slim") {
+		jambW = 0.28;
+		headerH = 0.5;
+		sillH = 0.12;
+		frameD = d + 0.1;
+		metal = METAL_WARM;
+		headerMetal = METAL_WARM;
+	}
+
+	const z = 0.04;
+	const jambH = h + sillH;
+	const jambY = -sillH / 2;
 
 	part(
 		target,
-		"StationBack",
-		new Vector3(size.X + extraX * 2, size.Y + extraY, 0.7),
-		new CFrame(0, extraY / 2 - 0.15, backZ),
-		metalDark,
-		Enum.Material.DiamondPlate,
-	);
-	part(
-		target,
-		"StationLeft",
-		new Vector3(0.7, size.Y + extraY, depth + 1.4),
-		new CFrame(-size.X / 2 - extraX + 0.15, extraY / 2 - 0.15, 0.15),
+		"JambLeft",
+		new Vector3(jambW, jambH, frameD),
+		new CFrame(-w / 2 - jambW / 2, jambY, z),
 		metal,
 		Enum.Material.Metal,
 	);
 	part(
 		target,
-		"StationRight",
-		new Vector3(0.7, size.Y + extraY, depth + 1.4),
-		new CFrame(size.X / 2 + extraX - 0.15, extraY / 2 - 0.15, 0.15),
+		"JambRight",
+		new Vector3(jambW, jambH, frameD),
+		new CFrame(w / 2 + jambW / 2, jambY, z),
 		metal,
 		Enum.Material.Metal,
 	);
 	part(
 		target,
-		"StationHeader",
-		new Vector3(size.X + extraX * 2, 1.1, depth + 1.2),
-		new CFrame(0, size.Y / 2 + extraY / 2 + 0.05, 0.1),
+		"Header",
+		new Vector3(w + jambW * 2, headerH, frameD),
+		new CFrame(0, h / 2 + headerH / 2, z),
+		headerMetal,
+		Enum.Material.Metal,
+	);
+	part(
+		target,
+		"Sill",
+		new Vector3(w, sillH, frameD),
+		new CFrame(0, -h / 2 - sillH / 2, z),
 		metal,
 		Enum.Material.Metal,
 	);
 
-	const beacon = part(
-		target,
-		"Beacon",
-		new Vector3(0.55, 0.55, 0.55),
-		new CFrame(0, size.Y / 2 + extraY / 2 + 0.55, -depth / 2 - 0.2),
-		Color3.fromRGB(196, 32, 36),
-		Enum.Material.Neon,
-	);
-	beacon.Shape = Enum.PartType.Ball;
-	const light = new Instance("PointLight");
-	light.Color = Color3.fromRGB(255, 64, 64);
-	light.Brightness = 1.2;
-	light.Range = 10;
-	light.Parent = beacon;
-
-	const plate = part(
-		target,
-		"NumberPlate",
-		new Vector3(1.5, 0.55, 0.08),
-		new CFrame(0, size.Y / 2 + extraY / 2 + 0.05, -depth / 2 - 0.55),
-		Color3.fromRGB(196, 152, 72),
-		Enum.Material.Metal,
-	);
-	const gui = new Instance("SurfaceGui");
-	gui.Face = Enum.NormalId.Front;
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud;
-	gui.PixelsPerStud = 50;
-	gui.Parent = plate;
-	const label = new Instance("TextLabel");
-	label.BackgroundTransparency = 1;
-	label.Size = new UDim2(1, 0, 1, 0);
-	label.Text = tostring(params.attributes.DoorNumber);
-	label.TextColor3 = Color3.fromRGB(40, 28, 16);
-	label.Font = Enum.Font.GothamBold;
-	label.TextScaled = true;
-	label.Parent = gui;
+	if (style === "channel") {
+		const beacon = part(
+			target,
+			"Beacon",
+			new Vector3(0.45, 0.45, 0.45),
+			new CFrame(0, h / 2 + headerH + 0.28, -frameD / 2 + 0.08),
+			NEON_RED,
+			Enum.Material.Neon,
+			Enum.PartType.Ball,
+		);
+		addLight(beacon, 1.3, 12);
+	} else if (style === "industrial") {
+		const beacon = part(
+			target,
+			"Beacon",
+			new Vector3(0.5, 0.35, 0.5),
+			new CFrame(
+				-w / 2 - jambW / 2,
+				h / 2 + headerH + 0.22,
+				-frameD / 2 + 0.05,
+			),
+			NEON_RED,
+			Enum.Material.Neon,
+		);
+		addLight(beacon, 1.4, 12);
+		part(
+			target,
+			"HeaderLip",
+			new Vector3(w + jambW * 2, 0.12, 0.16),
+			new CFrame(0, h / 2 + 0.08, -frameD / 2 + 0.02),
+			METAL_DARK,
+			Enum.Material.DiamondPlate,
+		);
+	} else if (style === "strip") {
+		const strip = part(
+			target,
+			"Beacon",
+			new Vector3(w * 0.72, 0.14, 0.1),
+			new CFrame(0, h / 2 + headerH * 0.15, -frameD / 2 - 0.02),
+			NEON_RED,
+			Enum.Material.Neon,
+		);
+		addLight(strip, 1.1, 10);
+	} else {
+		const strip = part(
+			target,
+			"Beacon",
+			new Vector3(w + jambW * 1.2, 0.08, 0.06),
+			new CFrame(0, h / 2 + 0.06, -frameD / 2 - 0.01),
+			NEON_RED,
+			Enum.Material.Neon,
+		);
+		addLight(strip, 0.9, 8);
+	}
 }

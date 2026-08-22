@@ -3,6 +3,7 @@ import {
 	generateDoorStationFrame,
 } from "./doorStationFrame";
 
+
 const DoorStationFrameGenerator = {
 	Attributes: DEFAULT_DOOR_STATION_FRAME_ATTRIBUTES,
 	OnGenerate: (
