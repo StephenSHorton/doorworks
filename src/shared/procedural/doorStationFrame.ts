@@ -1,4 +1,4 @@
-import { part } from "./parts";
+import { cylinderBetween, part } from "./parts";
 
 export type FrameStyle = "channel" | "industrial" | "strip" | "slim";
 
@@ -122,16 +122,32 @@ export function generateDoorStationFrame(
 	);
 
 	if (style === "channel") {
-		const beacon = part(
+		const lampH = 0.52;
+		const lampD = 0.36;
+		const cz = -frameD / 2 + 0.1;
+		const baseY = h / 2 + headerH + 0.04;
+		const base = new Vector3(0, baseY, cz);
+		const tip = new Vector3(0, baseY + lampH, cz);
+		const midY = baseY + lampH / 2;
+		const beacon = cylinderBetween(
 			target,
 			"Beacon",
-			new Vector3(0.45, 0.45, 0.45),
-			new CFrame(0, h / 2 + headerH + 0.28, -frameD / 2 + 0.08),
+			lampD,
+			base,
+			tip,
 			NEON_RED,
 			Enum.Material.Neon,
-			Enum.PartType.Ball,
 		);
 		addLight(beacon, 1.3, 12);
+		cylinderBetween(
+			target,
+			"BeaconRing",
+			lampD + 0.28,
+			new Vector3(0, midY - 0.05, cz),
+			new Vector3(0, midY + 0.05, cz),
+			METAL,
+			Enum.Material.Metal,
+		);
 	} else if (style === "industrial") {
 		const beacon = part(
 			target,
