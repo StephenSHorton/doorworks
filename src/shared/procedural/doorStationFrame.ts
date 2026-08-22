@@ -124,17 +124,16 @@ export function generateDoorStationFrame(
 	);
 
 	if (style === "channel") {
-		const lampD = 0.34;
-		const lampT = 0.08;
-		const ringD = 0.5;
-		const ringT = 0.07;
-		const side = params.attributes.KnobRight ? 1 : -1;
-		const bx = side * (w / 2 - 0.35);
+		const lampD = 0.46;
+		const lampT = 0.09;
+		const ringD = 0.66;
+		const ringT = 0.08;
+		const bx = 0;
 		const by = h / 2 + headerH / 2;
 		const faceZ = z - frameD / 2;
 		// Cylinder X-axis toward the front (−Z).
 		const facing = CFrame.Angles(0, math.pi / 2, 0);
-		const beacon = cylinder(
+		cylinder(
 			target,
 			"Beacon",
 			lampD,
@@ -143,7 +142,6 @@ export function generateDoorStationFrame(
 			NEON_RED,
 			Enum.Material.Neon,
 		);
-		addLight(beacon, 1.3, 12);
 		cylinder(
 			target,
 			"BeaconRing",
